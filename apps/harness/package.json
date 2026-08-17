@@ -1,0 +1,12 @@
+{
+  "name": "@oh-my-tabs/harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
+}
