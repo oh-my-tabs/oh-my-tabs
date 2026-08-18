@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "pnpm@10.28.2",
   "scripts": {
+    "start:cli": "pnpm --filter @oh-my-tabs/cli start",
     "start:harness": "OMT_DEBUG=true pnpm --filter @oh-my-tabs/harness start"
   }
 }
