@@ -21,7 +21,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  apps/harness:
+  apps/daemon:
     dependencies:
       ws:
         specifier: ^8.21.3
