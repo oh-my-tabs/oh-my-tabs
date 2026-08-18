@@ -6,12 +6,13 @@ import {
   TextRenderable,
   createCliRenderer,
 } from "@opentui/core"
+import { DaemonClient } from "./daemon-client.js"
 
 const renderer = await createCliRenderer({ exitOnCtrlC: true })
 const output = new TextRenderable(renderer, {
   content: "Type /help to see available commands.",
 })
-const socket = new WebSocket("ws://127.0.0.1:8787")
+const daemon = new DaemonClient()
 
 function setOutput(content: string) {
   output.content = content
@@ -35,23 +36,10 @@ const commands = [
     run: () => setOutput(""),
   },
   {
-    name: "/clear-tabs",
-    description: "close empty tabs in the focused window",
-    run: () => {
-      if (socket.readyState !== WebSocket.OPEN) {
-        setOutput("Harness is disconnected. Start it and try again.")
-        return
-      }
-
-      socket.send(JSON.stringify({ type: "clear-tabs" }))
-      setOutput("Empty tab cleanup requested.")
-    },
-  },
-  {
     name: "/quit",
     description: "exit oh-my-tabs",
     run: () => {
-      socket.close()
+      daemon.close()
       renderer.destroy()
     },
   },
@@ -64,14 +52,19 @@ const input = new InputRenderable(renderer, {
   width: "100%",
 })
 
-input.on(InputRenderableEvents.ENTER, (submittedValue) => {
+input.on(InputRenderableEvents.ENTER, async (submittedValue) => {
   const value = submittedValue.trim()
   input.value = ""
 
   if (!value) return
 
   if (!value.startsWith("/")) {
-    setOutput(`You: ${value}`)
+    setOutput("Thinking…")
+    try {
+      setOutput(await daemon.ask(value))
+    } catch (error) {
+      setOutput(error instanceof Error ? error.message : "The request failed.")
+    }
     return
   }
 
