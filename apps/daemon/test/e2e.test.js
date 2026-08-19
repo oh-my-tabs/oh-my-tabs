@@ -30,7 +30,10 @@ test('runs CLI request through model tool call and extension response', async (t
   const cli = new WebSocket(url);
   await new Promise((resolve) => cli.once('open', resolve));
   t.after(() => cli.close());
+  const cliMessages = [];
+  cli.on('message', (data) => cliMessages.push(JSON.parse(data)));
   cli.send(JSON.stringify({ type: 'agent-request', requestId: 'cli-1', message: 'How many tabs are currently open in the active window?' }));
   const response = await new Promise((resolve) => cli.once('message', (data) => resolve(JSON.parse(data))));
   assert.deepEqual(response, { type: 'agent-response', requestId: 'cli-1', content: 'There are 12 tabs open in the active window.' });
+  assert.deepEqual(cliMessages, [response]);
 });

@@ -47,3 +47,21 @@ test('maps an extension failure to active-window unavailable', async () => {
   transport.addClient(socket);
   await assert.rejects(transport.requestCount(), { code: 'active_window_unavailable' });
 });
+
+test('times out when the extension disconnects during a request', async () => {
+  const transport = new BrowserTransport({ timeoutMs: 5 });
+  let close;
+  const socket = {
+    readyState: WebSocket.OPEN,
+    send() {},
+    once(event, listener) {
+      if (event === 'close') close = listener;
+    },
+  };
+  transport.addClient(socket);
+
+  const result = transport.requestCount();
+  close();
+
+  await assert.rejects(result, { code: 'browser_timeout' });
+});
