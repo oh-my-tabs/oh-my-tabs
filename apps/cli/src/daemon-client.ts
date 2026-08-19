@@ -28,7 +28,7 @@ export class DaemonClient {
   constructor(
     url = resolveDaemonEndpoint().url,
     createSocket: (url: string) => DaemonSocket = (value) => new WebSocket(value),
-    private requestTimeoutMs = 5_000,
+    private requestTimeoutMs = 30_000,
     private timeout: TimeoutScheduler = { set: setTimeout, clear: clearTimeout },
   ) {
     this.socket = createSocket(url)

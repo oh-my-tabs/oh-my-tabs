@@ -67,10 +67,12 @@ describe("DaemonClient", () => {
   test("times out when the daemon does not respond", async () => {
     const socket = new FakeSocket()
     let runTimeout = () => {}
+    let timeoutDelay = 0
     const cleared: unknown[] = []
-    const client = new DaemonClient("ws://test", () => socket, 5_000, {
-      set(callback) {
+    const client = new DaemonClient("ws://test", () => socket, undefined, {
+      set(callback, delay) {
         runTimeout = callback
+        timeoutDelay = delay
         return 1 as unknown as ReturnType<typeof setTimeout>
       },
       clear(timer) {
@@ -79,6 +81,7 @@ describe("DaemonClient", () => {
     })
 
     const answer = client.ask("How many tabs?")
+    expect(timeoutDelay).toBe(30_000)
     runTimeout()
 
     await expect(answer).rejects.toThrow("The daemon did not respond in time.")
