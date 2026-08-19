@@ -17,11 +17,15 @@ export type PublicError = {
   message: string;
 };
 
-export type HelloMessage = {
+type HelloMessageBase = {
   type: typeof MESSAGE_TYPES.hello;
-  role: ClientRole;
   protocolVersion: typeof PROTOCOL_VERSION;
 };
+
+export type HelloMessage = HelloMessageBase & (
+  | { role: 'cli' }
+  | { role: 'extension'; sessionId: string }
+);
 
 export type AgentRequest = {
   type: typeof MESSAGE_TYPES.agentRequest;
@@ -117,6 +121,14 @@ export function parseClientToDaemonMessage(input: unknown): ClientToDaemonMessag
           'The client protocol version is not supported.',
         );
       }
+      if (value.role === 'extension') {
+        return {
+          type: value.type,
+          role: value.role,
+          protocolVersion: value.protocolVersion,
+          sessionId: string(value.sessionId),
+        };
+      }
       return { type: value.type, role: value.role, protocolVersion: value.protocolVersion };
     case MESSAGE_TYPES.agentRequest:
       return { type: value.type, requestId: requestId(value), message: string(value.message) };
@@ -168,7 +180,13 @@ export function parseDaemonToExtensionMessage(input: unknown): DaemonToExtension
   throw new ProtocolValidationError();
 }
 
-export function createHelloMessage(role: ClientRole): HelloMessage {
+export function createHelloMessage(role: 'cli'): HelloMessage;
+export function createHelloMessage(role: 'extension', sessionId: string): HelloMessage;
+export function createHelloMessage(role: ClientRole, sessionId?: string): HelloMessage {
+  if (role === 'extension') {
+    if (!sessionId) throw new ProtocolValidationError('invalid_handshake', 'Extension session ID is required.');
+    return { type: MESSAGE_TYPES.hello, role, protocolVersion: PROTOCOL_VERSION, sessionId };
+  }
   return { type: MESSAGE_TYPES.hello, role, protocolVersion: PROTOCOL_VERSION };
 }
 

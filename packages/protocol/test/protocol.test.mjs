@@ -22,6 +22,16 @@ test('creates versioned handshakes', () => {
     role: 'cli',
     protocolVersion: 1,
   });
+  assert.deepEqual(createHelloMessage('extension', 'session-1'), {
+    type: MESSAGE_TYPES.hello,
+    role: 'extension',
+    protocolVersion: 1,
+    sessionId: 'session-1',
+  });
+  assert.throws(
+    () => parseClientToDaemonMessage({ type: 'hello', role: 'extension', protocolVersion: 1 }),
+    ProtocolValidationError,
+  );
 });
 
 test('parses messages in each protocol direction', () => {

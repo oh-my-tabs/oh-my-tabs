@@ -1,11 +1,11 @@
 import process from 'node:process';
+import { resolveDaemonEndpoint } from '@oh-my-tabs/config';
 import { Harness, createCountTabsTool } from '@oh-my-tabs/harness';
 import { BrowserGateway, BrowserTransport } from './browser.js';
 import { OllamaProvider } from './llm.js';
 import { createDaemonServer } from './server.js';
 
-const host = process.env.WS_HOST ?? '127.0.0.1';
-const port = Number(process.env.WS_PORT ?? 8787);
+const { host, port } = resolveDaemonEndpoint(process.env);
 const transport = new BrowserTransport({ timeoutMs: Number(process.env.BROWSER_TIMEOUT_MS ?? 5_000) });
 const countTabs = createCountTabsTool(new BrowserGateway(transport));
 const server = createDaemonServer({

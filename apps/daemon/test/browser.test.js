@@ -9,8 +9,8 @@ test('correlates a browser count response', async (t) => {
   t.after(() => server.close());
   const transport = new BrowserTransport();
   server.on('connection', (socket) => {
-    transport.addClient(socket);
-    socket.on('message', (data) => transport.handleMessage(JSON.parse(data)));
+    transport.addClient(socket, 'session-1');
+    socket.on('message', (data) => transport.handleMessage(socket, JSON.parse(data)));
   });
   const client = new WebSocket(`ws://127.0.0.1:${server.address().port}`);
   await new Promise((resolve) => client.once('open', resolve));
@@ -25,7 +25,7 @@ test('correlates a browser count response', async (t) => {
 test('times out rather than hanging', async () => {
   const transport = new BrowserTransport({ timeoutMs: 5 });
   const socket = { readyState: WebSocket.OPEN, send() {}, once() {} };
-  transport.addClient(socket);
+  transport.addClient(socket, 'session-1');
   await assert.rejects(transport.requestCount(), { code: 'browser_timeout' });
 });
 
@@ -41,14 +41,14 @@ test('maps an extension failure to active-window unavailable', async () => {
     once() {},
     send(data) {
       const request = JSON.parse(data);
-      queueMicrotask(() => transport.handleMessage({ type: 'active-window-tabs-failed', requestId: request.requestId }));
+      queueMicrotask(() => transport.handleMessage(socket, { type: 'active-window-tabs-failed', requestId: request.requestId }));
     },
   };
-  transport.addClient(socket);
+  transport.addClient(socket, 'session-1');
   await assert.rejects(transport.requestCount(), { code: 'active_window_unavailable' });
 });
 
-test('times out when the extension disconnects during a request', async () => {
+test('rejects immediately when the selected extension disconnects during a request', async () => {
   const transport = new BrowserTransport({ timeoutMs: 5 });
   let close;
   const socket = {
@@ -63,5 +63,15 @@ test('times out when the extension disconnects during a request', async () => {
   const result = transport.requestCount();
   close();
 
-  await assert.rejects(result, { code: 'browser_timeout' });
+  await assert.rejects(result, { code: 'extension_disconnected' });
+});
+
+test('rejects requests when multiple extension sessions are connected', async () => {
+  const transport = new BrowserTransport();
+  const first = { readyState: WebSocket.OPEN, send() {}, once() {} };
+  const second = { readyState: WebSocket.OPEN, send() {}, once() {} };
+  transport.addClient(first, 'session-1');
+  transport.addClient(second, 'session-2');
+
+  await assert.rejects(async () => transport.requestCount(), { code: 'ambiguous_extension_session' });
 });

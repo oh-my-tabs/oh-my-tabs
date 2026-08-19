@@ -52,22 +52,35 @@ describe("DaemonClient", () => {
 
   test("times out when the daemon does not respond", async () => {
     const socket = new FakeSocket()
-    const client = new DaemonClient("ws://test", () => socket, 5)
+    let runTimeout = () => {}
+    const cleared: unknown[] = []
+    const client = new DaemonClient("ws://test", () => socket, 5_000, {
+      set(callback) {
+        runTimeout = callback
+        return 1 as unknown as ReturnType<typeof setTimeout>
+      },
+      clear(timer) { cleared.push(timer) },
+    })
 
-    expect(client.ask("How many tabs?")).rejects.toThrow("The daemon did not respond in time.")
+    const answer = client.ask("How many tabs?")
+    runTimeout()
+
+    await expect(answer).rejects.toThrow("The daemon did not respond in time.")
+    expect((client as unknown as { pending: Map<string, unknown> }).pending.size).toBe(0)
+    expect(cleared).toHaveLength(1)
   })
 
-  test("does not hang on malformed responses", async () => {
+  test("rejects malformed responses explicitly", async () => {
     const socket = new FakeSocket()
     const client = new DaemonClient("ws://test", () => socket, 5)
     const answer = client.ask("How many tabs?")
 
     socket.receiveRaw("not-json")
 
-    expect(answer).rejects.toThrow("The daemon did not respond in time.")
+    expect(answer).rejects.toThrow("The daemon returned an invalid response.")
   })
 
-  test("does not hang on unknown response types", async () => {
+  test("rejects unknown response types explicitly", async () => {
     const socket = new FakeSocket()
     const client = new DaemonClient("ws://test", () => socket, 5)
     const answer = client.ask("How many tabs?")
@@ -75,6 +88,6 @@ describe("DaemonClient", () => {
 
     socket.receive({ type: "unknown", requestId: request.requestId })
 
-    expect(answer).rejects.toThrow("The daemon did not respond in time.")
+    expect(answer).rejects.toThrow("The daemon returned an invalid response.")
   })
 })

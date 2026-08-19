@@ -65,7 +65,7 @@ test('rejects unsupported protocol versions', async (t) => {
 test('rejects a repeated handshake', async (t) => {
   const client = await startServer(t);
   client.send(JSON.stringify({ type: 'hello', role: 'cli', protocolVersion: 1 }));
-  client.send(JSON.stringify({ type: 'hello', role: 'extension', protocolVersion: 1 }));
+  client.send(JSON.stringify({ type: 'hello', role: 'extension', protocolVersion: 1, sessionId: 'session-1' }));
 
   const response = await new Promise((resolve) => {
     client.once('message', (data) => resolve(JSON.parse(data)));
@@ -76,7 +76,7 @@ test('rejects a repeated handshake', async (t) => {
 
 test('rejects extension messages that belong to the CLI role', async (t) => {
   const client = await startServer(t);
-  client.send(JSON.stringify({ type: 'hello', role: 'extension', protocolVersion: 1 }));
+  client.send(JSON.stringify({ type: 'hello', role: 'extension', protocolVersion: 1, sessionId: 'session-1' }));
   client.send(JSON.stringify({ type: 'agent-request', requestId: 'request-1', message: 'count tabs' }));
 
   const response = await new Promise((resolve) => {
@@ -110,7 +110,7 @@ test('keeps CLI requests working when an extension disconnects', async (t) => {
 
   const extension = new WebSocket(url);
   await new Promise((resolve) => extension.once('open', resolve));
-  extension.send(JSON.stringify({ type: 'hello', role: 'extension', protocolVersion: 1 }));
+  extension.send(JSON.stringify({ type: 'hello', role: 'extension', protocolVersion: 1, sessionId: 'session-1' }));
   const extensionClosed = new Promise((resolve) => extension.once('close', resolve));
   extension.close();
   await extensionClosed;

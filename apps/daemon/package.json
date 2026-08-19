@@ -8,6 +8,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@oh-my-tabs/config": "workspace:*",
     "@oh-my-tabs/harness": "workspace:*",
     "@oh-my-tabs/protocol": "workspace:*",
     "ws": "^8.21.3"

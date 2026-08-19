@@ -7,12 +7,13 @@ import {
   createCliRenderer,
 } from "@opentui/core"
 import { DaemonClient } from "./daemon-client.js"
+import { resolveDaemonEndpoint } from "@oh-my-tabs/config"
 
 const renderer = await createCliRenderer({ exitOnCtrlC: true })
 const output = new TextRenderable(renderer, {
   content: "Type /help to see available commands.",
 })
-const daemon = new DaemonClient()
+const daemon = new DaemonClient(resolveDaemonEndpoint(process.env).url)
 
 function setOutput(content: string) {
   output.content = content

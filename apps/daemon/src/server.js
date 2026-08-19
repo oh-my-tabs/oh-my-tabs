@@ -41,7 +41,7 @@ export function createDaemonServer({ host = '127.0.0.1', port = 8787, harness, b
           return;
         }
         role = message.role;
-        if (role === 'extension') browserTransport.addClient(socket);
+        if (role === 'extension') browserTransport.addClient(socket, message.sessionId);
         return;
       }
 
@@ -51,7 +51,7 @@ export function createDaemonServer({ host = '127.0.0.1', port = 8787, harness, b
       }
 
       if (role === 'extension') {
-        if (browserTransport.handleMessage(message)) return;
+        if (browserTransport.handleMessage(socket, message)) return;
         sendError(socket, new AppError('message_not_allowed', 'The extension cannot send this message type.'));
         return;
       }

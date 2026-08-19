@@ -10,6 +10,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@oh-my-tabs/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@oh-my-tabs/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
@@ -26,6 +29,9 @@ importers:
 
   apps/daemon:
     dependencies:
+      '@oh-my-tabs/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@oh-my-tabs/harness':
         specifier: workspace:*
         version: link:../../packages/harness
@@ -35,6 +41,12 @@ importers:
       ws:
         specifier: ^8.21.3
         version: 8.21.3
+
+  packages/config:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/harness:
     devDependencies:

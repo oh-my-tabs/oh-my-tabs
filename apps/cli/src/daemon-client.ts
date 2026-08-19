@@ -5,6 +5,7 @@ import {
   parseDaemonToCliMessage,
   parseJsonMessage,
 } from "@oh-my-tabs/protocol"
+import { resolveDaemonEndpoint } from "@oh-my-tabs/config"
 
 export type DaemonSocket = Pick<WebSocket, "readyState" | "send" | "addEventListener" | "close">
 
@@ -14,14 +15,20 @@ type PendingRequest = {
   timer: ReturnType<typeof setTimeout>
 }
 
+type TimeoutScheduler = {
+  set(callback: () => void, delay: number): ReturnType<typeof setTimeout>
+  clear(timer: ReturnType<typeof setTimeout>): void
+}
+
 export class DaemonClient {
   private socket: DaemonSocket
   private pending = new Map<string, PendingRequest>()
 
   constructor(
-    url = "ws://127.0.0.1:8787",
+    url = resolveDaemonEndpoint().url,
     createSocket: (url: string) => DaemonSocket = (value) => new WebSocket(value),
     private requestTimeoutMs = 5_000,
+    private timeout: TimeoutScheduler = { set: setTimeout, clear: clearTimeout },
   ) {
     this.socket = createSocket(url)
     if (this.socket.readyState === WebSocket.OPEN) this.sendHandshake()
@@ -38,7 +45,7 @@ export class DaemonClient {
 
     const requestId = crypto.randomUUID()
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
+      const timer = this.timeout.set(() => {
         this.rejectRequest(requestId, "The daemon did not respond in time.")
       }, this.requestTimeoutMs)
       this.pending.set(requestId, { resolve, reject, timer })
@@ -54,7 +61,12 @@ export class DaemonClient {
 
   private handleMessage(data: string) {
     let message
-    try { message = parseDaemonToCliMessage(parseJsonMessage(data)) } catch { return }
+    try {
+      message = parseDaemonToCliMessage(parseJsonMessage(data))
+    } catch {
+      this.rejectAll("The daemon returned an invalid response.")
+      return
+    }
     if (!message.requestId) return
     const pending = this.pending.get(message.requestId)
     if (!pending) return
@@ -63,7 +75,7 @@ export class DaemonClient {
     if (!isResponse && !isError) return
 
     this.pending.delete(message.requestId)
-    clearTimeout(pending.timer)
+    this.timeout.clear(pending.timer)
 
     if (message.type === MESSAGE_TYPES.agentResponse) pending.resolve(message.content)
     else pending.reject(new Error(message.error?.message ?? "The daemon returned an error."))
@@ -72,14 +84,14 @@ export class DaemonClient {
   private rejectRequest(requestId: string, message: string) {
     const pending = this.pending.get(requestId)
     if (!pending) return
-    clearTimeout(pending.timer)
+    this.timeout.clear(pending.timer)
     this.pending.delete(requestId)
     pending.reject(new Error(message))
   }
 
   private rejectAll(message: string) {
     for (const pending of this.pending.values()) {
-      clearTimeout(pending.timer)
+      this.timeout.clear(pending.timer)
       pending.reject(new Error(message))
     }
     this.pending.clear()
