@@ -17,7 +17,9 @@ test('correlates a browser count response', async (t) => {
   t.after(() => client.close());
   client.once('message', (data) => {
     const request = JSON.parse(data);
-    client.send(JSON.stringify({ type: 'active-window-tabs-counted', requestId: request.requestId, windowId: 4, count: 9 }));
+    client.send(
+      JSON.stringify({ type: 'active-window-tabs-counted', requestId: request.requestId, windowId: 4, count: 9 }),
+    );
   });
   assert.deepEqual(await transport.requestCount(), { windowId: 4, count: 9 });
 });
@@ -41,7 +43,9 @@ test('maps an extension failure to active-window unavailable', async () => {
     once() {},
     send(data) {
       const request = JSON.parse(data);
-      queueMicrotask(() => transport.handleMessage(socket, { type: 'active-window-tabs-failed', requestId: request.requestId }));
+      queueMicrotask(() =>
+        transport.handleMessage(socket, { type: 'active-window-tabs-failed', requestId: request.requestId }),
+      );
     },
   };
   transport.addClient(socket, 'session-1');

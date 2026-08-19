@@ -4,10 +4,24 @@ import { DaemonClient, type DaemonSocket } from "./daemon-client.js"
 class FakeSocket extends EventTarget implements DaemonSocket {
   readyState = WebSocket.OPEN
   sent: string[] = []
-  send(data: string) { this.sent.push(data) }
-  close() { this.dispatchEvent(new Event("close")) }
-  receive(data: object) { this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify(data) })) }
-  receiveRaw(data: string) { this.dispatchEvent(new MessageEvent("message", { data })) }
+  send(data: string) {
+    this.sent.push(data)
+  }
+  close() {
+    this.dispatchEvent(new Event("close"))
+  }
+  receive(data: object) {
+    this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify(data) }))
+  }
+  receiveRaw(data: string) {
+    this.dispatchEvent(new MessageEvent("message", { data }))
+  }
+}
+
+function lastSent(socket: FakeSocket) {
+  const message = socket.sent.at(-1)
+  if (!message) throw new Error("Expected the socket to send a message.")
+  return JSON.parse(message)
 }
 
 describe("DaemonClient", () => {
@@ -22,7 +36,7 @@ describe("DaemonClient", () => {
     const socket = new FakeSocket()
     const client = new DaemonClient("ws://test", () => socket)
     const answer = client.ask("How many tabs?")
-    const request = JSON.parse(socket.sent.at(-1)!)
+    const request = lastSent(socket)
     socket.receive({ type: "agent-response", requestId: request.requestId, content: "There are 12 tabs." })
     expect(await answer).toBe("There are 12 tabs.")
   })
@@ -31,7 +45,7 @@ describe("DaemonClient", () => {
     const socket = new FakeSocket()
     const client = new DaemonClient("ws://test", () => socket)
     const answer = client.ask("How many tabs?")
-    const request = JSON.parse(socket.sent.at(-1)!)
+    const request = lastSent(socket)
     socket.receive({
       type: "agent-error",
       requestId: request.requestId,
@@ -59,7 +73,9 @@ describe("DaemonClient", () => {
         runTimeout = callback
         return 1 as unknown as ReturnType<typeof setTimeout>
       },
-      clear(timer) { cleared.push(timer) },
+      clear(timer) {
+        cleared.push(timer)
+      },
     })
 
     const answer = client.ask("How many tabs?")
@@ -84,7 +100,7 @@ describe("DaemonClient", () => {
     const socket = new FakeSocket()
     const client = new DaemonClient("ws://test", () => socket, 5)
     const answer = client.ask("How many tabs?")
-    const request = JSON.parse(socket.sent.at(-1)!)
+    const request = lastSent(socket)
 
     socket.receive({ type: "unknown", requestId: request.requestId })
 

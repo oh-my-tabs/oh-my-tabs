@@ -24,7 +24,10 @@ export function createDaemonServer({ host = '127.0.0.1', port = 8787, harness, b
         const rawMessage = parseJsonMessage(data.toString());
         if (
           !role &&
-          (!rawMessage || typeof rawMessage !== 'object' || rawMessage.type !== MESSAGE_TYPES.hello)
+          (!rawMessage ||
+            typeof rawMessage !== 'object' ||
+            !('type' in rawMessage) ||
+            rawMessage.type !== MESSAGE_TYPES.hello)
         ) {
           sendError(socket, new AppError('invalid_handshake', 'The first message must identify a valid client role.'));
           return;
@@ -41,7 +44,7 @@ export function createDaemonServer({ host = '127.0.0.1', port = 8787, harness, b
           return;
         }
         role = message.role;
-        if (role === 'extension') browserTransport.addClient(socket, message.sessionId);
+        if (message.role === 'extension') browserTransport.addClient(socket, message.sessionId);
         return;
       }
 

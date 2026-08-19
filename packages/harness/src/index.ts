@@ -40,7 +40,10 @@ export type ToolDefinition = {
 export type ToolRegistry = ReadonlyMap<string, ToolDefinition>;
 
 export class HarnessError extends Error {
-  constructor(readonly code: string, message: string) {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
     super(message);
     this.name = 'HarnessError';
   }
@@ -83,7 +86,7 @@ export class Harness {
 
     const call = calls[0];
     const tool = call?.function?.name ? this.tools.get(call.function.name) : undefined;
-    if (!tool || !tool.validateArguments(call.function.arguments)) {
+    if (!tool?.validateArguments(call.function.arguments)) {
       throw new HarnessError('invalid_tool_call', 'The model returned an invalid tool call.');
     }
 

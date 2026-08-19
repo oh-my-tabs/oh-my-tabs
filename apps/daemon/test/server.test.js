@@ -4,7 +4,14 @@ import WebSocket from 'ws';
 import { BrowserTransport } from '../src/browser.js';
 import { createDaemonServer } from '../src/server.js';
 
-async function startServer(t, harness = { async run() { throw new Error('Harness should not run.'); } }) {
+async function startServer(
+  t,
+  harness = {
+    async run() {
+      throw new Error('Harness should not run.');
+    },
+  },
+) {
   const server = createDaemonServer({ port: 0, browserTransport: new BrowserTransport(), harness });
   await new Promise((resolve) => server.once('listening', resolve));
   t.after(() => server.close());
@@ -34,7 +41,11 @@ test('returns a public error for malformed JSON', async (t) => {
 
 test('rejects an invalid first message without invoking the harness', async (t) => {
   let invoked = false;
-  const client = await startServer(t, { async run() { invoked = true; } });
+  const client = await startServer(t, {
+    async run() {
+      invoked = true;
+    },
+  });
   client.send(JSON.stringify({ type: 'unknown' }));
 
   const response = await new Promise((resolve) => {
@@ -102,7 +113,11 @@ test('keeps CLI requests working when an extension disconnects', async (t) => {
   const server = createDaemonServer({
     port: 0,
     browserTransport: new BrowserTransport(),
-    harness: { async run() { return 'still connected'; } },
+    harness: {
+      async run() {
+        return 'still connected';
+      },
+    },
   });
   await new Promise((resolve) => server.once('listening', resolve));
   t.after(() => server.close());

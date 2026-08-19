@@ -22,10 +22,7 @@ type HelloMessageBase = {
   protocolVersion: typeof PROTOCOL_VERSION;
 };
 
-export type HelloMessage = HelloMessageBase & (
-  | { role: 'cli' }
-  | { role: 'extension'; sessionId: string }
-);
+export type HelloMessage = HelloMessageBase & ({ role: 'cli' } | { role: 'extension'; sessionId: string });
 
 export type AgentRequest = {
   type: typeof MESSAGE_TYPES.agentRequest;
@@ -62,11 +59,7 @@ export type ActiveWindowTabsFailed = {
   requestId: string;
 };
 
-export type ClientToDaemonMessage =
-  | HelloMessage
-  | AgentRequest
-  | ActiveWindowTabsCounted
-  | ActiveWindowTabsFailed;
+export type ClientToDaemonMessage = HelloMessage | AgentRequest | ActiveWindowTabsCounted | ActiveWindowTabsFailed;
 
 export type DaemonToCliMessage = AgentResponse | AgentError;
 export type DaemonToExtensionMessage = CountActiveWindowTabs | AgentError;

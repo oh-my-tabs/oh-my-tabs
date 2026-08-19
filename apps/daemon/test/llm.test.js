@@ -25,6 +25,9 @@ test('sends Ollama a non-streaming tool-enabled chat request', async () => {
 });
 
 test('maps model tool support errors to a clear application error', async () => {
-  const provider = new OllamaProvider({ model: 'old-model', fetchImpl: async () => new Response('does not support tools', { status: 400 }) });
+  const provider = new OllamaProvider({
+    model: 'old-model',
+    fetchImpl: async () => new Response('does not support tools', { status: 400 }),
+  });
   await assert.rejects(provider.chat([], []), { code: 'tool_calling_unsupported' });
 });

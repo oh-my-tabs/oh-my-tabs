@@ -25,7 +25,9 @@ export class OllamaProvider {
       const unsupported = /tool|function/i.test(detail);
       throw new AppError(
         unsupported ? 'tool_calling_unsupported' : 'llm_unavailable',
-        unsupported ? 'The configured model does not support tool calling.' : `Ollama request failed (${response.status}).`,
+        unsupported
+          ? 'The configured model does not support tool calling.'
+          : `Ollama request failed (${response.status}).`,
       );
     }
 

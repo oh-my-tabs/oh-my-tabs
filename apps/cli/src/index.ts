@@ -1,11 +1,4 @@
-import {
-  Box,
-  InputRenderable,
-  InputRenderableEvents,
-  Text,
-  TextRenderable,
-  createCliRenderer,
-} from "@opentui/core"
+import { Box, InputRenderable, InputRenderableEvents, Text, TextRenderable, createCliRenderer } from "@opentui/core"
 import { DaemonClient } from "./daemon-client.js"
 import { resolveDaemonEndpoint } from "@oh-my-tabs/config"
 
@@ -24,11 +17,7 @@ const commands = [
     name: "/help",
     description: "show available commands",
     run: () => {
-      setOutput(
-        commands
-          .map(({ name, description }) => `${name.padEnd(8)} ${description}`)
-          .join("\n"),
-      )
+      setOutput(commands.map(({ name, description }) => `${name.padEnd(8)} ${description}`).join("\n"))
     },
   },
   {
@@ -73,9 +62,7 @@ input.on(InputRenderableEvents.ENTER, async (submittedValue) => {
   const command = commands.find(({ name }) => name === commandName)
 
   if (!command) {
-    setOutput(
-      `Unknown command: ${commandName}\nType /help to see available commands.`,
-    )
+    setOutput(`Unknown command: ${commandName}\nType /help to see available commands.`)
     return
   }
 

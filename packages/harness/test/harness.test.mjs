@@ -12,13 +12,19 @@ test('executes a registered tool and returns the model final answer', async () =
     async chat(messages, tools) {
       calls.push({ messages: structuredClone(messages), tools });
       if (calls.length === 1) {
-        return { role: 'assistant', content: '', tool_calls: [{ function: { name: 'browser.tabs.count_active_window', arguments: {} } }] };
+        return {
+          role: 'assistant',
+          content: '',
+          tool_calls: [{ function: { name: 'browser.tabs.count_active_window', arguments: {} } }],
+        };
       }
       return { role: 'assistant', content: 'There are 12 tabs open in the active window.' };
     },
   };
   const countTabs = createCountTabsTool({
-    async countTabsInActiveWindow() { return { windowId: 7, count: 12 }; },
+    async countTabsInActiveWindow() {
+      return { windowId: 7, count: 12 };
+    },
   });
   const harness = new Harness({ llm, tools: registry(countTabs) });
 
@@ -29,7 +35,11 @@ test('executes a registered tool and returns the model final answer', async () =
 
 test('returns a model answer that does not require a tool', async () => {
   const harness = new Harness({
-    llm: { async chat() { return { role: 'assistant', content: 'No browser needed.' }; } },
+    llm: {
+      async chat() {
+        return { role: 'assistant', content: 'No browser needed.' };
+      },
+    },
     tools: new Map(),
   });
 
@@ -39,10 +49,17 @@ test('returns a model answer that does not require a tool', async () => {
 test('rejects unknown tools without executing a registered tool', async () => {
   let invoked = false;
   const countTabs = createCountTabsTool({
-    async countTabsInActiveWindow() { invoked = true; return { windowId: 1, count: 1 }; },
+    async countTabsInActiveWindow() {
+      invoked = true;
+      return { windowId: 1, count: 1 };
+    },
   });
   const harness = new Harness({
-    llm: { async chat() { return { role: 'assistant', content: '', tool_calls: [{ function: { name: 'unknown', arguments: {} } }] }; } },
+    llm: {
+      async chat() {
+        return { role: 'assistant', content: '', tool_calls: [{ function: { name: 'unknown', arguments: {} } }] };
+      },
+    },
     tools: registry(countTabs),
   });
 
@@ -53,10 +70,21 @@ test('rejects unknown tools without executing a registered tool', async () => {
 test('rejects invalid arguments without executing the tool', async () => {
   let invoked = false;
   const countTabs = createCountTabsTool({
-    async countTabsInActiveWindow() { invoked = true; return { windowId: 1, count: 1 }; },
+    async countTabsInActiveWindow() {
+      invoked = true;
+      return { windowId: 1, count: 1 };
+    },
   });
   const harness = new Harness({
-    llm: { async chat() { return { role: 'assistant', content: '', tool_calls: [{ function: { name: 'browser.tabs.count_active_window', arguments: { unexpected: true } } }] }; } },
+    llm: {
+      async chat() {
+        return {
+          role: 'assistant',
+          content: '',
+          tool_calls: [{ function: { name: 'browser.tabs.count_active_window', arguments: { unexpected: true } } }],
+        };
+      },
+    },
     tools: registry(countTabs),
   });
 
@@ -78,14 +106,20 @@ test('executes a second tool without changing the agent loop', async () => {
     validateArguments(arguments_) {
       return Boolean(arguments_ && typeof arguments_ === 'object' && typeof arguments_.text === 'string');
     },
-    async execute(arguments_) { return { text: arguments_.text }; },
+    async execute(arguments_) {
+      return { text: arguments_.text };
+    },
   };
   const harness = new Harness({
     llm: {
       async chat(messages) {
         turn += 1;
         if (turn === 1) {
-          return { role: 'assistant', content: '', tool_calls: [{ function: { name: 'test.echo', arguments: { text: 'hello' } } }] };
+          return {
+            role: 'assistant',
+            content: '',
+            tool_calls: [{ function: { name: 'test.echo', arguments: { text: 'hello' } } }],
+          };
         }
         assert.deepEqual(JSON.parse(messages.at(-1).content), { text: 'hello' });
         return { role: 'assistant', content: 'hello' };
@@ -99,18 +133,32 @@ test('executes a second tool without changing the agent loop', async () => {
 
 test('rejects registry entries whose key differs from the tool name', () => {
   const countTabs = createCountTabsTool({
-    async countTabsInActiveWindow() { return { windowId: 1, count: 1 }; },
+    async countTabsInActiveWindow() {
+      return { windowId: 1, count: 1 };
+    },
   });
 
   assert.throws(
-    () => new Harness({ llm: { async chat() { throw new Error(); } }, tools: new Map([['wrong-name', countTabs]]) }),
+    () =>
+      new Harness({
+        llm: {
+          async chat() {
+            throw new Error();
+          },
+        },
+        tools: new Map([['wrong-name', countTabs]]),
+      }),
     { code: 'invalid_tool_registry' },
   );
 });
 
 test('rejects empty user messages', async () => {
   const harness = new Harness({
-    llm: { async chat() { throw new Error('LLM should not run.'); } },
+    llm: {
+      async chat() {
+        throw new Error('LLM should not run.');
+      },
+    },
     tools: new Map(),
   });
 

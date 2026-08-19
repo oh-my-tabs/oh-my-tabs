@@ -11,14 +11,17 @@ test('uses the default local daemon endpoint', () => {
 });
 
 test('applies host and port overrides consistently', () => {
-  assert.deepEqual(resolveDaemonEndpoint({
-    OH_MY_TABS_DAEMON_HOST: 'localhost',
-    OH_MY_TABS_DAEMON_PORT: '9000',
-  }), {
-    host: 'localhost',
-    port: 9000,
-    url: 'ws://localhost:9000',
-  });
+  assert.deepEqual(
+    resolveDaemonEndpoint({
+      OH_MY_TABS_DAEMON_HOST: 'localhost',
+      OH_MY_TABS_DAEMON_PORT: '9000',
+    }),
+    {
+      host: 'localhost',
+      port: 9000,
+      url: 'ws://localhost:9000',
+    },
+  );
 });
 
 test('rejects invalid ports', () => {

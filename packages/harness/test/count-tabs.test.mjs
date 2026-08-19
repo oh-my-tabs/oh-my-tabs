@@ -4,7 +4,9 @@ import { createCountTabsTool } from '../dist/index.js';
 
 test('defines and executes the count-tabs browser tool', async () => {
   const tool = createCountTabsTool({
-    async countTabsInActiveWindow() { return { windowId: 7, count: 12 }; },
+    async countTabsInActiveWindow() {
+      return { windowId: 7, count: 12 };
+    },
   });
 
   assert.equal(tool.definition.function.name, 'browser.tabs.count_active_window');
@@ -14,7 +16,9 @@ test('defines and executes the count-tabs browser tool', async () => {
 
 test('rejects non-empty and non-object arguments', () => {
   const tool = createCountTabsTool({
-    async countTabsInActiveWindow() { return { windowId: 7, count: 12 }; },
+    async countTabsInActiveWindow() {
+      return { windowId: 7, count: 12 };
+    },
   });
 
   assert.equal(tool.validateArguments({ unexpected: true }), false);

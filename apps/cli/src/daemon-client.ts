@@ -5,6 +5,7 @@ import {
   parseDaemonToCliMessage,
   parseJsonMessage,
 } from "@oh-my-tabs/protocol"
+import type { DaemonToCliMessage } from "@oh-my-tabs/protocol"
 import { resolveDaemonEndpoint } from "@oh-my-tabs/config"
 
 export type DaemonSocket = Pick<WebSocket, "readyState" | "send" | "addEventListener" | "close">
@@ -53,14 +54,16 @@ export class DaemonClient {
     })
   }
 
-  close() { this.socket.close() }
+  close() {
+    this.socket.close()
+  }
 
   private sendHandshake() {
     this.socket.send(JSON.stringify(createHelloMessage("cli")))
   }
 
   private handleMessage(data: string) {
-    let message
+    let message: DaemonToCliMessage
     try {
       message = parseDaemonToCliMessage(parseJsonMessage(data))
     } catch {

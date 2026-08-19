@@ -9,14 +9,19 @@
    pnpm start:daemon
    ```
 
-   The daemon uses the already-installed `llama3.1:latest` model by default. Set `OLLAMA_MODEL` to override it. `OLLAMA_BASE_URL` defaults to `http://127.0.0.1:11434`, and the WebSocket daemon defaults to `ws://127.0.0.1:8787`.
+   The daemon uses the already-installed `llama3.1:latest` model by default. Set `OLLAMA_MODEL` to override it. `OLLAMA_BASE_URL` defaults to `http://127.0.0.1:11434`.
+
+   CLI and daemon share `OH_MY_TABS_DAEMON_HOST` and `OH_MY_TABS_DAEMON_PORT`. Their defaults resolve to `ws://127.0.0.1:8787`.
 
 3. Build the sibling `browser-extension` project with `pnpm build`, load its `.output/chrome-mv3` directory as an unpacked Chrome extension, and confirm its popup reports a connected state.
 4. In a second terminal, run `pnpm start:cli` and enter a question such as `How many tabs are currently open in the active window?`.
 
 ## Verify
 
+Run the complete implementation quality gate:
+
 ```sh
-pnpm test
-pnpm typecheck
+pnpm check
 ```
+
+This runs all package tests, lint, formatting checks, typechecks for CLI, daemon and shared packages, and production builds. Run `pnpm check` separately in the sibling `browser-extension` repository to verify its tests, lint, formatting, TypeScript and Chrome production build.

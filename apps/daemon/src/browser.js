@@ -26,10 +26,8 @@ export class BrowserTransport {
   }
 
   handleMessage(socket, message) {
-    if (
-      message.type !== MESSAGE_TYPES.activeWindowTabsCounted &&
-      message.type !== MESSAGE_TYPES.activeWindowTabsFailed
-    ) return false;
+    if (message.type !== MESSAGE_TYPES.activeWindowTabsCounted && message.type !== MESSAGE_TYPES.activeWindowTabsFailed)
+      return false;
     const pending = this.#pending.get(message.requestId);
     if (!pending) return true;
     if (pending.socket !== socket) return false;
@@ -70,8 +68,16 @@ export class BrowserTransport {
 
       this.#pending.set(requestId, {
         socket,
-        resolve: (value) => { clearTimeout(timer); this.#pending.delete(requestId); resolve(value); },
-        reject: (error) => { clearTimeout(timer); this.#pending.delete(requestId); reject(error); },
+        resolve: (value) => {
+          clearTimeout(timer);
+          this.#pending.delete(requestId);
+          resolve(value);
+        },
+        reject: (error) => {
+          clearTimeout(timer);
+          this.#pending.delete(requestId);
+          reject(error);
+        },
       });
       const payload = JSON.stringify(createCountActiveWindowTabs(requestId));
       socket.send(payload);
@@ -80,6 +86,10 @@ export class BrowserTransport {
 }
 
 export class BrowserGateway {
-  constructor(transport) { this.transport = transport; }
-  countTabsInActiveWindow() { return this.transport.requestCount(); }
+  constructor(transport) {
+    this.transport = transport;
+  }
+  countTabsInActiveWindow() {
+    return this.transport.requestCount();
+  }
 }

@@ -11,10 +11,7 @@ export interface BrowserGateway {
 
 function hasNoArguments(arguments_: unknown): arguments_ is ToolArguments {
   return Boolean(
-    arguments_ &&
-    typeof arguments_ === 'object' &&
-    !Array.isArray(arguments_) &&
-    Object.keys(arguments_).length === 0,
+    arguments_ && typeof arguments_ === 'object' && !Array.isArray(arguments_) && Object.keys(arguments_).length === 0,
   );
 }
 
