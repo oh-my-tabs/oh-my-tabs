@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { Harness } from '@oh-my-tabs/harness';
+import { Harness, createCountTabsTool } from '@oh-my-tabs/harness';
 import WebSocket from 'ws';
 import { BrowserGateway, BrowserTransport } from '../src/browser.js';
 import { createDaemonServer } from '../src/server.js';
@@ -14,7 +14,9 @@ test('runs CLI request through model tool call and extension response', async (t
     return { role: 'assistant', content: 'There are 12 tabs open in the active window.' };
   } };
   const transport = new BrowserTransport({ timeoutMs: 200 });
-  const server = createDaemonServer({ port: 0, browserTransport: transport, harness: new Harness({ llm, browser: new BrowserGateway(transport) }) });
+  const countTabs = createCountTabsTool(new BrowserGateway(transport));
+  const harness = new Harness({ llm, tools: new Map([[countTabs.definition.function.name, countTabs]]) });
+  const server = createDaemonServer({ port: 0, browserTransport: transport, harness });
   await new Promise((resolve) => server.once('listening', resolve));
   t.after(() => server.close());
   const url = `ws://127.0.0.1:${server.address().port}`;
