@@ -1,3 +1,11 @@
+import {
+  MESSAGE_TYPES,
+  createAgentRequest,
+  createHelloMessage,
+  parseDaemonToCliMessage,
+  parseJsonMessage,
+} from "@oh-my-tabs/protocol"
+
 export type DaemonSocket = Pick<WebSocket, "readyState" | "send" | "addEventListener" | "close">
 
 type PendingRequest = {
@@ -34,30 +42,30 @@ export class DaemonClient {
         this.rejectRequest(requestId, "The daemon did not respond in time.")
       }, this.requestTimeoutMs)
       this.pending.set(requestId, { resolve, reject, timer })
-      this.socket.send(JSON.stringify({ type: "agent-request", requestId, message }))
+      this.socket.send(JSON.stringify(createAgentRequest(requestId, message)))
     })
   }
 
   close() { this.socket.close() }
 
   private sendHandshake() {
-    this.socket.send(JSON.stringify({ type: "hello", role: "cli", protocolVersion: 1 }))
+    this.socket.send(JSON.stringify(createHelloMessage("cli")))
   }
 
   private handleMessage(data: string) {
-    let message: { type?: string; requestId?: string; content?: string; error?: { message?: string } }
-    try { message = JSON.parse(data) } catch { return }
+    let message
+    try { message = parseDaemonToCliMessage(parseJsonMessage(data)) } catch { return }
     if (!message.requestId) return
     const pending = this.pending.get(message.requestId)
     if (!pending) return
-    const isResponse = message.type === "agent-response" && typeof message.content === "string"
-    const isError = message.type === "agent-error"
+    const isResponse = message.type === MESSAGE_TYPES.agentResponse
+    const isError = message.type === MESSAGE_TYPES.agentError
     if (!isResponse && !isError) return
 
     this.pending.delete(message.requestId)
     clearTimeout(pending.timer)
 
-    if (message.type === "agent-response" && typeof message.content === "string") pending.resolve(message.content)
+    if (message.type === MESSAGE_TYPES.agentResponse) pending.resolve(message.content)
     else pending.reject(new Error(message.error?.message ?? "The daemon returned an error."))
   }
 

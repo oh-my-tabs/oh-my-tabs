@@ -1,13 +1,15 @@
 import { WebSocketServer } from 'ws';
-import { parseHandshake, parseMessage } from './protocol.js';
+import {
+  MESSAGE_TYPES,
+  createAgentError,
+  createAgentResponse,
+  parseClientToDaemonMessage,
+  parseJsonMessage,
+} from '@oh-my-tabs/protocol';
 import { AppError, toPublicError } from './errors.js';
 
 function sendError(socket, error, requestId) {
-  socket.send(JSON.stringify({
-    type: 'agent-error',
-    ...(requestId === undefined ? {} : { requestId }),
-    error: toPublicError(error),
-  }));
+  socket.send(JSON.stringify(createAgentError(toPublicError(error), requestId)));
 }
 
 export function createDaemonServer({ host = '127.0.0.1', port = 8787, harness, browserTransport }) {
@@ -18,22 +20,32 @@ export function createDaemonServer({ host = '127.0.0.1', port = 8787, harness, b
 
     socket.on('message', async (data) => {
       let message;
-      try { message = parseMessage(data); } catch (error) {
+      try {
+        const rawMessage = parseJsonMessage(data.toString());
+        if (
+          !role &&
+          (!rawMessage || typeof rawMessage !== 'object' || rawMessage.type !== MESSAGE_TYPES.hello)
+        ) {
+          sendError(socket, new AppError('invalid_handshake', 'The first message must identify a valid client role.'));
+          return;
+        }
+        message = parseClientToDaemonMessage(rawMessage);
+      } catch (error) {
         sendError(socket, error);
         return;
       }
 
       if (!role) {
-        try {
-          role = parseHandshake(message).role;
-          if (role === 'extension') browserTransport.addClient(socket);
-        } catch (error) {
-          sendError(socket, error);
+        if (message.type !== MESSAGE_TYPES.hello) {
+          sendError(socket, new AppError('invalid_handshake', 'The first message must identify a valid client role.'));
+          return;
         }
+        role = message.role;
+        if (role === 'extension') browserTransport.addClient(socket);
         return;
       }
 
-      if (message.type === 'hello') {
+      if (message.type === MESSAGE_TYPES.hello) {
         sendError(socket, new AppError('repeated_handshake', 'The client role is already established.'));
         return;
       }
@@ -44,7 +56,7 @@ export function createDaemonServer({ host = '127.0.0.1', port = 8787, harness, b
         return;
       }
 
-      if (message.type !== 'agent-request') {
+      if (message.type !== MESSAGE_TYPES.agentRequest) {
         sendError(
           socket,
           new AppError('message_not_allowed', 'The CLI cannot send this message type.'),
@@ -55,7 +67,7 @@ export function createDaemonServer({ host = '127.0.0.1', port = 8787, harness, b
 
       try {
         const content = await harness.run(message.message);
-        socket.send(JSON.stringify({ type: 'agent-response', requestId: message.requestId, content }));
+        socket.send(JSON.stringify(createAgentResponse(message.requestId, content)));
       } catch (error) {
         sendError(socket, error, message.requestId);
       }

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import WebSocket from 'ws';
+import { MESSAGE_TYPES, createCountActiveWindowTabs } from '@oh-my-tabs/protocol';
 import { AppError } from './errors.js';
-import { parseBrowserResult } from './protocol.js';
 
 export class BrowserTransport {
   #clients = new Set();
@@ -21,17 +21,20 @@ export class BrowserTransport {
   }
 
   handleMessage(message) {
-    if (message.type !== 'active-window-tabs-counted' && message.type !== 'active-window-tabs-failed') return false;
+    if (
+      message.type !== MESSAGE_TYPES.activeWindowTabsCounted &&
+      message.type !== MESSAGE_TYPES.activeWindowTabsFailed
+    ) return false;
     const pending = this.#pending.get(message.requestId);
     if (!pending) return true;
 
-    if (message.type === 'active-window-tabs-failed') {
+    if (message.type === MESSAGE_TYPES.activeWindowTabsFailed) {
       pending.reject(new AppError('active_window_unavailable', 'The active browser window is unavailable.'));
       return true;
     }
 
     try {
-      pending.resolve(parseBrowserResult(message));
+      pending.resolve({ windowId: message.windowId, count: message.count });
     } catch (error) {
       pending.reject(error);
     }
@@ -55,7 +58,7 @@ export class BrowserTransport {
         resolve: (value) => { clearTimeout(timer); this.#pending.delete(requestId); resolve(value); },
         reject: (error) => { clearTimeout(timer); this.#pending.delete(requestId); reject(error); },
       });
-      const payload = JSON.stringify({ type: 'count-active-window-tabs', requestId });
+      const payload = JSON.stringify(createCountActiveWindowTabs(requestId));
       for (const client of clients) client.send(payload);
     });
   }

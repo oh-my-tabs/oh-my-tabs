@@ -9,6 +9,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@oh-my-tabs/protocol": "workspace:*",
     "@opentui/core": "^0.1.107"
   },
   "devDependencies": {

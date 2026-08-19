@@ -1,3 +1,5 @@
+import { ProtocolValidationError } from '@oh-my-tabs/protocol';
+
 export class AppError extends Error {
   constructor(code, message, options) {
     super(message, options);
@@ -7,6 +9,10 @@ export class AppError extends Error {
 }
 
 export function toPublicError(error) {
+  if (error instanceof ProtocolValidationError) {
+    return { code: error.code, message: error.message };
+  }
+
   if (error instanceof AppError) {
     return { code: error.code, message: error.message };
   }

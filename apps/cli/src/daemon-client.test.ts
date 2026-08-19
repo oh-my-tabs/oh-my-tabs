@@ -32,7 +32,11 @@ describe("DaemonClient", () => {
     const client = new DaemonClient("ws://test", () => socket)
     const answer = client.ask("How many tabs?")
     const request = JSON.parse(socket.sent.at(-1)!)
-    socket.receive({ type: "agent-error", requestId: request.requestId, error: { message: "Extension missing." } })
+    socket.receive({
+      type: "agent-error",
+      requestId: request.requestId,
+      error: { code: "extension_disconnected", message: "Extension missing." },
+    })
     expect(answer).rejects.toThrow("Extension missing.")
   })
 
