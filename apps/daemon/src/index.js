@@ -1,6 +1,6 @@
 import process from 'node:process';
+import { Harness } from '@oh-my-tabs/harness';
 import { BrowserGateway, BrowserTransport } from './browser.js';
-import { Harness } from './harness.js';
 import { OllamaProvider } from './llm.js';
 import { createDaemonServer } from './server.js';
 

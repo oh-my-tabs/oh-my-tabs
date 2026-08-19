@@ -1,3 +1,4 @@
+import { HarnessError } from '@oh-my-tabs/harness';
 import { ProtocolValidationError } from '@oh-my-tabs/protocol';
 
 export class AppError extends Error {
@@ -9,6 +10,10 @@ export class AppError extends Error {
 }
 
 export function toPublicError(error) {
+  if (error instanceof HarnessError) {
+    return { code: error.code, message: error.message };
+  }
+
   if (error instanceof ProtocolValidationError) {
     return { code: error.code, message: error.message };
   }

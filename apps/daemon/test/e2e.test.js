@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { Harness } from '@oh-my-tabs/harness';
 import WebSocket from 'ws';
 import { BrowserGateway, BrowserTransport } from '../src/browser.js';
-import { Harness } from '../src/harness.js';
 import { createDaemonServer } from '../src/server.js';
 
 test('runs CLI request through model tool call and extension response', async (t) => {

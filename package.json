@@ -4,8 +4,8 @@
   "packageManager": "pnpm@10.28.2",
   "scripts": {
     "start:cli": "pnpm --filter @oh-my-tabs/protocol build && pnpm --filter @oh-my-tabs/cli start",
-    "start:daemon": "pnpm --filter @oh-my-tabs/protocol build && pnpm --filter @oh-my-tabs/daemon start",
-    "test": "pnpm --filter @oh-my-tabs/protocol test && pnpm --filter @oh-my-tabs/daemon test && pnpm --filter @oh-my-tabs/cli test",
+    "start:daemon": "pnpm --filter @oh-my-tabs/protocol build && pnpm --filter @oh-my-tabs/harness build && pnpm --filter @oh-my-tabs/daemon start",
+    "test": "pnpm --filter @oh-my-tabs/protocol test && pnpm --filter @oh-my-tabs/harness test && pnpm --filter @oh-my-tabs/daemon test && pnpm --filter @oh-my-tabs/cli test",
     "typecheck": "pnpm --filter @oh-my-tabs/cli typecheck"
   }
 }
