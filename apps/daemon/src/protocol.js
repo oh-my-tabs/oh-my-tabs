@@ -1,5 +1,7 @@
 import { AppError } from './errors.js';
 
+export const PROTOCOL_VERSION = 1;
+
 export function parseMessage(data) {
   try {
     const value = JSON.parse(data.toString());
@@ -21,4 +23,14 @@ export function parseBrowserResult(value) {
     throw new AppError('invalid_browser_response', 'The extension returned an invalid tab count.');
   }
   return { windowId: value.windowId, count: value.count };
+}
+
+export function parseHandshake(value) {
+  if (value.type !== 'hello' || (value.role !== 'cli' && value.role !== 'extension')) {
+    throw new AppError('invalid_handshake', 'The first message must identify a valid client role.');
+  }
+  if (value.protocolVersion !== PROTOCOL_VERSION) {
+    throw new AppError('unsupported_protocol_version', 'The client protocol version is not supported.');
+  }
+  return { role: value.role };
 }

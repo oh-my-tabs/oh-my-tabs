@@ -16,6 +16,8 @@ export class DaemonClient {
     private requestTimeoutMs = 5_000,
   ) {
     this.socket = createSocket(url)
+    if (this.socket.readyState === WebSocket.OPEN) this.sendHandshake()
+    else this.socket.addEventListener("open", () => this.sendHandshake())
     this.socket.addEventListener("message", (event) => this.handleMessage(String(event.data)))
     this.socket.addEventListener("close", () => this.rejectAll("The daemon connection closed."))
     this.socket.addEventListener("error", () => this.rejectAll("Cannot connect to the daemon. Start it and try again."))
@@ -37,6 +39,10 @@ export class DaemonClient {
   }
 
   close() { this.socket.close() }
+
+  private sendHandshake() {
+    this.socket.send(JSON.stringify({ type: "hello", role: "cli", protocolVersion: 1 }))
+  }
 
   private handleMessage(data: string) {
     let message: { type?: string; requestId?: string; content?: string; error?: { message?: string } }

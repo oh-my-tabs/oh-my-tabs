@@ -22,6 +22,7 @@ test('runs CLI request through model tool call and extension response', async (t
   const extension = new WebSocket(url);
   await new Promise((resolve) => extension.once('open', resolve));
   t.after(() => extension.close());
+  extension.send(JSON.stringify({ type: 'hello', role: 'extension', protocolVersion: 1 }));
   extension.on('message', (data) => {
     const request = JSON.parse(data);
     if (request.type === 'count-active-window-tabs') extension.send(JSON.stringify({ type: 'active-window-tabs-counted', requestId: request.requestId, windowId: 42, count: 12 }));
@@ -32,6 +33,7 @@ test('runs CLI request through model tool call and extension response', async (t
   t.after(() => cli.close());
   const cliMessages = [];
   cli.on('message', (data) => cliMessages.push(JSON.parse(data)));
+  cli.send(JSON.stringify({ type: 'hello', role: 'cli', protocolVersion: 1 }));
   cli.send(JSON.stringify({ type: 'agent-request', requestId: 'cli-1', message: 'How many tabs are currently open in the active window?' }));
   const response = await new Promise((resolve) => cli.once('message', (data) => resolve(JSON.parse(data))));
   assert.deepEqual(response, { type: 'agent-response', requestId: 'cli-1', content: 'There are 12 tabs open in the active window.' });

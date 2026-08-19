@@ -11,11 +11,18 @@ class FakeSocket extends EventTarget implements DaemonSocket {
 }
 
 describe("DaemonClient", () => {
+  test("identifies itself before sending requests", () => {
+    const socket = new FakeSocket()
+    new DaemonClient("ws://test", () => socket)
+
+    expect(JSON.parse(socket.sent[0])).toEqual({ type: "hello", role: "cli", protocolVersion: 1 })
+  })
+
   test("correlates an agent response", async () => {
     const socket = new FakeSocket()
     const client = new DaemonClient("ws://test", () => socket)
     const answer = client.ask("How many tabs?")
-    const request = JSON.parse(socket.sent[0])
+    const request = JSON.parse(socket.sent.at(-1)!)
     socket.receive({ type: "agent-response", requestId: request.requestId, content: "There are 12 tabs." })
     expect(await answer).toBe("There are 12 tabs.")
   })
@@ -24,7 +31,7 @@ describe("DaemonClient", () => {
     const socket = new FakeSocket()
     const client = new DaemonClient("ws://test", () => socket)
     const answer = client.ask("How many tabs?")
-    const request = JSON.parse(socket.sent[0])
+    const request = JSON.parse(socket.sent.at(-1)!)
     socket.receive({ type: "agent-error", requestId: request.requestId, error: { message: "Extension missing." } })
     expect(answer).rejects.toThrow("Extension missing.")
   })
@@ -60,7 +67,7 @@ describe("DaemonClient", () => {
     const socket = new FakeSocket()
     const client = new DaemonClient("ws://test", () => socket, 5)
     const answer = client.ask("How many tabs?")
-    const request = JSON.parse(socket.sent[0])
+    const request = JSON.parse(socket.sent.at(-1)!)
 
     socket.receive({ type: "unknown", requestId: request.requestId })
 
