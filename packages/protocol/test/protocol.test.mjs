@@ -38,6 +38,7 @@ test('rejects malformed JSON and payloads', () => {
   assert.throws(() => parseClientToDaemonMessage({ type: 'hello', role: 'cli', protocolVersion: 2 }), ProtocolValidationError);
   assert.throws(() => parseDaemonToCliMessage({ type: 'agent-response', requestId: '1' }), ProtocolValidationError);
   assert.throws(() => parseDaemonToExtensionMessage({ type: 'unknown' }), ProtocolValidationError);
+  assert.throws(() => parseDaemonToExtensionMessage({ type: 'clear-tabs' }), ProtocolValidationError);
 });
 
 test('rejects invalid browser results', () => {

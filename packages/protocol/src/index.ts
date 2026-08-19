@@ -8,7 +8,6 @@ export const MESSAGE_TYPES = {
   countActiveWindowTabs: 'count-active-window-tabs',
   activeWindowTabsCounted: 'active-window-tabs-counted',
   activeWindowTabsFailed: 'active-window-tabs-failed',
-  clearTabs: 'clear-tabs',
 } as const;
 
 export type ClientRole = 'cli' | 'extension';
@@ -59,10 +58,6 @@ export type ActiveWindowTabsFailed = {
   requestId: string;
 };
 
-export type ClearTabs = {
-  type: typeof MESSAGE_TYPES.clearTabs;
-};
-
 export type ClientToDaemonMessage =
   | HelloMessage
   | AgentRequest
@@ -70,7 +65,7 @@ export type ClientToDaemonMessage =
   | ActiveWindowTabsFailed;
 
 export type DaemonToCliMessage = AgentResponse | AgentError;
-export type DaemonToExtensionMessage = CountActiveWindowTabs | ClearTabs | AgentError;
+export type DaemonToExtensionMessage = CountActiveWindowTabs | AgentError;
 
 export class ProtocolValidationError extends Error {
   constructor(
@@ -163,7 +158,6 @@ export function parseDaemonToExtensionMessage(input: unknown): DaemonToExtension
   if (value.type === MESSAGE_TYPES.countActiveWindowTabs) {
     return { type: value.type, requestId: requestId(value) };
   }
-  if (value.type === MESSAGE_TYPES.clearTabs) return { type: value.type };
   if (value.type === MESSAGE_TYPES.agentError) {
     return {
       type: value.type,
