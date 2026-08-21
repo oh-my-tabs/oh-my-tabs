@@ -8,6 +8,9 @@ export const MESSAGE_TYPES = {
   countActiveWindowTabs: 'count-active-window-tabs',
   activeWindowTabsCounted: 'active-window-tabs-counted',
   activeWindowTabsFailed: 'active-window-tabs-failed',
+  listActiveWindowTabs: 'list-active-window-tabs',
+  activeWindowTabsListed: 'active-window-tabs-listed',
+  activeWindowTabsListFailed: 'active-window-tabs-list-failed',
 } as const;
 
 export type ClientRole = 'cli' | 'extension';
@@ -59,10 +62,41 @@ export type ActiveWindowTabsFailed = {
   requestId: string;
 };
 
-export type ClientToDaemonMessage = HelloMessage | AgentRequest | ActiveWindowTabsCounted | ActiveWindowTabsFailed;
+export type BrowserTab = {
+  id: number;
+  title: string;
+  url: string;
+  active: boolean;
+  pinned: boolean;
+};
+
+export type ListActiveWindowTabs = {
+  type: typeof MESSAGE_TYPES.listActiveWindowTabs;
+  requestId: string;
+};
+
+export type ActiveWindowTabsListed = {
+  type: typeof MESSAGE_TYPES.activeWindowTabsListed;
+  requestId: string;
+  windowId: number;
+  tabs: BrowserTab[];
+};
+
+export type ActiveWindowTabsListFailed = {
+  type: typeof MESSAGE_TYPES.activeWindowTabsListFailed;
+  requestId: string;
+};
+
+export type ClientToDaemonMessage =
+  | HelloMessage
+  | AgentRequest
+  | ActiveWindowTabsCounted
+  | ActiveWindowTabsFailed
+  | ActiveWindowTabsListed
+  | ActiveWindowTabsListFailed;
 
 export type DaemonToCliMessage = AgentResponse | AgentError;
-export type DaemonToExtensionMessage = CountActiveWindowTabs | AgentError;
+export type DaemonToExtensionMessage = CountActiveWindowTabs | ListActiveWindowTabs | AgentError;
 
 export class ProtocolValidationError extends Error {
   constructor(
@@ -82,6 +116,23 @@ function record(value: unknown): Record<string, unknown> {
 function string(value: unknown): string {
   if (typeof value !== 'string') throw new ProtocolValidationError();
   return value;
+}
+
+function boolean(value: unknown): boolean {
+  if (typeof value !== 'boolean') throw new ProtocolValidationError();
+  return value;
+}
+
+function browserTab(value: unknown): BrowserTab {
+  const tab = record(value);
+  if (!Number.isInteger(tab.id)) throw new ProtocolValidationError();
+  return {
+    id: Number(tab.id),
+    title: string(tab.title),
+    url: string(tab.url),
+    active: boolean(tab.active),
+    pinned: boolean(tab.pinned),
+  };
 }
 
 function requestId(value: Record<string, unknown>) {
@@ -138,6 +189,16 @@ export function parseClientToDaemonMessage(input: unknown): ClientToDaemonMessag
     }
     case MESSAGE_TYPES.activeWindowTabsFailed:
       return { type: value.type, requestId: requestId(value) };
+    case MESSAGE_TYPES.activeWindowTabsListed:
+      if (!Number.isInteger(value.windowId) || !Array.isArray(value.tabs)) throw new ProtocolValidationError();
+      return {
+        type: value.type,
+        requestId: requestId(value),
+        windowId: Number(value.windowId),
+        tabs: value.tabs.map(browserTab),
+      };
+    case MESSAGE_TYPES.activeWindowTabsListFailed:
+      return { type: value.type, requestId: requestId(value) };
     default:
       throw new ProtocolValidationError();
   }
@@ -161,6 +222,9 @@ export function parseDaemonToCliMessage(input: unknown): DaemonToCliMessage {
 export function parseDaemonToExtensionMessage(input: unknown): DaemonToExtensionMessage {
   const value = record(input);
   if (value.type === MESSAGE_TYPES.countActiveWindowTabs) {
+    return { type: value.type, requestId: requestId(value) };
+  }
+  if (value.type === MESSAGE_TYPES.listActiveWindowTabs) {
     return { type: value.type, requestId: requestId(value) };
   }
   if (value.type === MESSAGE_TYPES.agentError) {
@@ -209,4 +273,20 @@ export function createActiveWindowTabsCounted(
 
 export function createActiveWindowTabsFailed(requestId: string): ActiveWindowTabsFailed {
   return { type: MESSAGE_TYPES.activeWindowTabsFailed, requestId };
+}
+
+export function createListActiveWindowTabs(requestId: string): ListActiveWindowTabs {
+  return { type: MESSAGE_TYPES.listActiveWindowTabs, requestId };
+}
+
+export function createActiveWindowTabsListed(
+  requestId: string,
+  windowId: number,
+  tabs: BrowserTab[],
+): ActiveWindowTabsListed {
+  return { type: MESSAGE_TYPES.activeWindowTabsListed, requestId, windowId, tabs };
+}
+
+export function createActiveWindowTabsListFailed(requestId: string): ActiveWindowTabsListFailed {
+  return { type: MESSAGE_TYPES.activeWindowTabsListFailed, requestId };
 }

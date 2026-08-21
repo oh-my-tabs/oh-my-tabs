@@ -1,7 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import WebSocket from 'ws';
-import { MESSAGE_TYPES, createCountActiveWindowTabs } from '@oh-my-tabs/protocol';
+import { MESSAGE_TYPES, createCountActiveWindowTabs, createListActiveWindowTabs } from '@oh-my-tabs/protocol';
 import { AppError } from './errors.js';
+
+const BROWSER_RESPONSE_TYPES = new Set([
+  MESSAGE_TYPES.activeWindowTabsCounted,
+  MESSAGE_TYPES.activeWindowTabsFailed,
+  MESSAGE_TYPES.activeWindowTabsListed,
+  MESSAGE_TYPES.activeWindowTabsListFailed,
+]);
 
 export class BrowserTransport {
   #clients = new Map();
@@ -26,19 +33,19 @@ export class BrowserTransport {
   }
 
   handleMessage(socket, message) {
-    if (message.type !== MESSAGE_TYPES.activeWindowTabsCounted && message.type !== MESSAGE_TYPES.activeWindowTabsFailed)
-      return false;
+    if (!BROWSER_RESPONSE_TYPES.has(message.type)) return false;
     const pending = this.#pending.get(message.requestId);
     if (!pending) return true;
     if (pending.socket !== socket) return false;
+    if (message.type !== pending.successType && message.type !== pending.failureType) return false;
 
-    if (message.type === MESSAGE_TYPES.activeWindowTabsFailed) {
+    if (message.type === pending.failureType) {
       pending.reject(new AppError('active_window_unavailable', 'The active browser window is unavailable.'));
       return true;
     }
 
     try {
-      pending.resolve({ windowId: message.windowId, count: message.count });
+      pending.resolve(message);
     } catch (error) {
       pending.reject(error);
     }
@@ -46,6 +53,24 @@ export class BrowserTransport {
   }
 
   requestCount() {
+    return this.#request(
+      createCountActiveWindowTabs,
+      MESSAGE_TYPES.activeWindowTabsCounted,
+      MESSAGE_TYPES.activeWindowTabsFailed,
+      (message) => ({ windowId: message.windowId, count: message.count }),
+    );
+  }
+
+  requestList() {
+    return this.#request(
+      createListActiveWindowTabs,
+      MESSAGE_TYPES.activeWindowTabsListed,
+      MESSAGE_TYPES.activeWindowTabsListFailed,
+      (message) => ({ windowId: message.windowId, tabs: message.tabs }),
+    );
+  }
+
+  #request(createRequest, successType, failureType, mapResult) {
     const clients = [...this.#clients.keys()].filter((client) => client.readyState === WebSocket.OPEN);
     if (clients.length === 0) {
       throw new AppError('extension_disconnected', 'The browser extension is not connected.');
@@ -68,10 +93,12 @@ export class BrowserTransport {
 
       this.#pending.set(requestId, {
         socket,
-        resolve: (value) => {
+        successType,
+        failureType,
+        resolve: (message) => {
           clearTimeout(timer);
           this.#pending.delete(requestId);
-          resolve(value);
+          resolve(mapResult(message));
         },
         reject: (error) => {
           clearTimeout(timer);
@@ -79,7 +106,7 @@ export class BrowserTransport {
           reject(error);
         },
       });
-      const payload = JSON.stringify(createCountActiveWindowTabs(requestId));
+      const payload = JSON.stringify(createRequest(requestId));
       socket.send(payload);
     });
   }
@@ -91,5 +118,8 @@ export class BrowserGateway {
   }
   countTabsInActiveWindow() {
     return this.transport.requestCount();
+  }
+  listTabsInActiveWindow() {
+    return this.transport.requestList();
   }
 }

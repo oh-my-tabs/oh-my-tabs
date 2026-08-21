@@ -24,6 +24,30 @@ test('correlates a browser count response', async (t) => {
   assert.deepEqual(await transport.requestCount(), { windowId: 4, count: 9 });
 });
 
+test('correlates a browser tab list response', async () => {
+  const transport = new BrowserTransport();
+  const tabs = [{ id: 1, title: 'Example', url: 'https://example.com', active: true, pinned: false }];
+  const socket = {
+    readyState: WebSocket.OPEN,
+    once() {},
+    send(data) {
+      const request = JSON.parse(data);
+      assert.equal(request.type, 'list-active-window-tabs');
+      queueMicrotask(() =>
+        transport.handleMessage(socket, {
+          type: 'active-window-tabs-listed',
+          requestId: request.requestId,
+          windowId: 4,
+          tabs,
+        }),
+      );
+    },
+  };
+  transport.addClient(socket, 'session-1');
+
+  assert.deepEqual(await transport.requestList(), { windowId: 4, tabs });
+});
+
 test('times out rather than hanging', async () => {
   const transport = new BrowserTransport({ timeoutMs: 5 });
   const socket = { readyState: WebSocket.OPEN, send() {}, once() {} };

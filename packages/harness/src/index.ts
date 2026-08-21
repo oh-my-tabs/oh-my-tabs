@@ -102,3 +102,5 @@ export class Harness {
 
 export { createCountTabsTool } from './tools/count-tabs.js';
 export type { BrowserGateway, BrowserTabCount } from './tools/count-tabs.js';
+export { createListTabsTool } from './tools/list-tabs.js';
+export type { BrowserTab, BrowserTabList, BrowserTabListGateway } from './tools/list-tabs.js';
